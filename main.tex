@@ -8,6 +8,10 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{natbib}
+\usepackage{amsmath}
+\newcommand*\textfrac[2]{
+  \frac{\text{#1}}{\text{#2}}
+}
 
 \begin{document}
 
@@ -23,11 +27,31 @@ Machine Learning algorithms that make recommendations to users are becoming more
 TODO: More research on what's been already done.
 
 \section{Data}
-Our data was gathered from \cite{data}, whose dataset can be found at \href{https://www.kaggle.com/shuyangli94/food-com-recipes-and-user-interactions}{here}. The data consists of more than 180 thousand recipes (made up of their ingredients, calorie level, and various tags describing them), and 700 thousand user reviews all scraped from Food.com. The original authors of the data used various natural language processing techniques to parse the recipes into about 8 thousand unique ingredients, around 500 unique tags, and a calorie level that is a 0, 1, or 2 denoting low-calorie to high-calorie levels.
+Our data was gathered from \cite{data}, whose dataset can be found at \href{https://www.kaggle.com/shuyangli94/food-com-recipes-and-user-interactions}{here}. The data consists of more than 180 thousand recipes (made up of their ingredients, calorie level, and various tags describing them), and 700 thousand user reviews all scraped from Food.com ranging from 0 to 5 stars. The original authors of the data used various natural language processing techniques to parse the recipes into about 8 thousand unique ingredients, around 500 unique tags, and a calorie level that is a 0, 1, or 2 denoting low-calorie to high-calorie recipes.
 
-The data appears to be very reliable, having been scraped directly from Food.com with the scraper being publicly available on github. Furthermore, it was used in a published research article, so one would hope everything was done ethically and correctly. The dataset is plenty large enough to give use meaningful answers to our questions and should be able to make a fairly robust recommendation system. 
+The data appears to be very reliable, having been scraped directly from Food.com with the scraper being publicly available on github \cite{data_scraper}. Furthermore, it was used in a published research article, so one would hope everything was done ethically and correctly. The dataset is plenty large enough to give use meaningful answers to our questions and should be able to make a fairly robust recommendation system. 
 
 \section{Methods}
+
+We first put the data in a format useful for our algorithms. For our recipes, we make each recipe a vector, with a 1 in the $i$th entry denoting it having the $i$th ingredient or tag, and a 0 that it doesn't have it. We make the last entry that of calorie level. We format our user data in a similar way, only with the actual rating (from 0-5) of the $i$th recipe being in the $i$th entry.
+
+However, this is a far from perfect solution. Note that the importance of a recipe having salt will be just as important as a recipe having jasmine or a jalapeno pepper. Commonly used in document classification, we use "TF-IDF" to help with this problem. In our case we change each entry using the conversion (where item means either ingredient/tag):
+
+$$\textfrac{\# of $i$th item}{Total \# of items in Recipe} * \log \Big( \textfrac{Total \# of Recipes}{\# of Recipes with $i$th item} \Big)$$
+
+We perform the same transformation on the user dataset, replacing item with rating, and recipes with users. Throughout this document we analyze our data in both forms in order to visualize which data helps the algorithms perform the best. (Spoiler: It's usually TF-IDF)
+
+\subsection{Recommendation based on Recipe}
+We first begin by reducing the dimensions of our data using PCA. After transforming the basis, we want to the keep the components that explain the majority of the variance in the data. These variances can be seen in \ref{fig:pca}
+\begin{figure}[t]
+\centering
+\includegraphics[width=1\textwidth]{figs/pca.pdf}
+\caption{PCA Analysis of both Original and TF-IDF Recipe data}
+\label{fig:pca}
+\end{figure}
+
+\subsection{Recommendation based on User}
+
 
 \section{Results}
 
