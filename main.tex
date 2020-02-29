@@ -1,0 +1,43 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+
+\title{Recipe Recommendations}
+\author{Easton Potokar}
+\date{February 2020}
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{natbib}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    We seek to explore making a personalized recipe recommendation system based on ingredients, tags, and past user reviews. We analyze both the accuracy of the recommendations as well as the temporal complexity of making them. We find that we can make very accurate recommendations to satisfy what any cravings people may have and those didn't know they even had.
+\end{abstract}
+
+\section{Problem Statement and Motivation}
+Machine Learning algorithms that make recommendations to users are becoming more and more common and are seen all over the internet for movies, friends, web searches, etc. A less common application is that of recipe suggestions. Is it possible to find a perfect recipe for someone given their past preferences of foods? Or a recommendation based on what their current cravings and pantry look like? 
+
+TODO: More research on what's been already done.
+
+\section{Data}
+Our data was gathered from \cite{data}, whose dataset can be found at \href{https://www.kaggle.com/shuyangli94/food-com-recipes-and-user-interactions}{here}. The data consists of more than 180 thousand recipes (made up of their ingredients, calorie level, and various tags describing them), and 700 thousand user reviews all scraped from Food.com. The original authors of the data used various natural language processing techniques to parse the recipes into about 8 thousand unique ingredients, around 500 unique tags, and a calorie level that is a 0, 1, or 2 denoting low-calorie to high-calorie levels.
+
+The data appears to be very reliable, having been scraped directly from Food.com with the scraper being publicly available on github. Furthermore, it was used in a published research article, so one would hope everything was done ethically and correctly. The dataset is plenty large enough to give use meaningful answers to our questions and should be able to make a fairly robust recommendation system. 
+
+\section{Methods}
+
+\section{Results}
+
+\section{Analysis}
+
+\section{Ethical Ramifications}
+
+
+\section{Conclusion}
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}
