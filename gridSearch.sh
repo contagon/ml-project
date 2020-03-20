@@ -1,11 +1,10 @@
 #!/bin/env bash
 
-#SBATCH --array=0-50
-#SBATCH --mem-per-cpu=6GB
+#SBATCH --array=0-5
+#SBATCH --mem-per-cpu=8GB
 #SBATCH --time=2-10:0:0
 #SBATCH --cpus-per-task=16
-#SBATCH -C 'rhel7'
-#SBATCH -J "rr_rec"   # job name
+#SBATCH -J "knn"   # job name
 #SBATCH --nodes=1   # limit to one node
 
 
@@ -22,4 +21,4 @@ data=${data_values[$(( trial % ${#data_values[@]} ))]}
 module load miniconda3
 source activate ml
 
-python gridSearch.py --data ${data} --rec ${rec} --n_jobs 4 --rdr kNN
+python gridSearch.py --data ${data} --rec ${rec} --n_jobs 8 --rdr kNN
