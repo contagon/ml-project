@@ -8,6 +8,7 @@ Utest = sparse.load_npz("data-cleaned/user_test.npz")
 
 #misc imports
 import pandas as pd
+import argparse
 
 #import all estimators
 from userClasses import *
@@ -15,65 +16,8 @@ from sklearn.decomposition import TruncatedSVD, NMF, PCA, \
             KernelPCA, LatentDirichletAllocation, FactorAnalysis
 
 #import grid search utilities
-from searchgrid import set_grid, make_grid_search, make_pipeline
 from sklearn.model_selection import PredefinedSplit, GridSearchCV
 from sklearn.pipeline import Pipeline
-
-#prepare testing data and splitting data
-user_test = Utest[:,-1].toarray().flatten().astype('int')
-y = np.zeros((Utest.shape[0], 2), dtype='int')-1
-for i in range(len(y)):
-    recipes = Utest[i].nonzero()[1][:-1]
-    if len(recipes) == 1:
-        y[i,0] = recipes
-    elif len(recipes) == 2:
-        y[i,:] = recipes
-    else:
-        raise ValueError("Someone reviewed 3 recipes!")
-y_blank = np.zeros((U.shape[0], 2))
-y_tog = np.concatenate([y, y_blank])
-
-test_fold = np.concatenate([
-    # The training data.
-    np.full(U[user_test].shape[0], 0, dtype=np.int8),
-    # The development data.
-    np.full(U.shape[0], -1, dtype=np.int8)
-])
-cv = PredefinedSplit(test_fold)
-
-###### CHANGE U HERE TO Uhat to data ########
-U_tog = sparse.vstack([U[user_test], U])
-
-
-###### Actual Grid search is right here, we'll essentially do everything one at a time
-# n_clusters = [10, 50, 100, 150]
-rdr = "kNN"
-dr_options = [TruncatedSVD(), KernelPCA(), NMF(), LatentDirichletAllocation()]
-dr_names = ["PCA", "KPCA", "NMF", "LDA"]
-
-#iterate through all dimension reducers as we go!
-for dr, dr_class in zip(dr_names, dr_options):
-    print(f"######### {dr} #############")
-    
-    pipe = Pipeline([("dr", dr_class),
-                    ("rdr", userKNN())])
-
-    params = {"dr__n_components": [20, 40, 60, 80],
-                "rdr__n_neighbors": [2, 10, 50, 100],
-                }
-
-    gs = GridSearchCV(pipe, params, cv=cv, verbose=3)
-    gs.fit(U_tog, y_tog)
-    results = pd.DataFrame(gs.cv_results_)
-
-    #open all data files
-    scores = pd.read_pickle("results/user_U.pkl")
-
-    #save all data
-    temp = results[results["params"]==gs.best_params_]
-    scores[rdr][dr] = (gs.best_score_, temp["mean_fit_time"].iloc[0], 
-                    temp["mean_score_time"].iloc[0], gs.best_params_)
-    scores.to_pickle("results/user_U.pkl")
 
 """
 All possible combinations:
@@ -86,7 +30,7 @@ All possible combinations:
     * PPCA
     * UMAP ???
     * None
-2.  Recommendation Algorithms
+2.  Recommendation Algorithmms
     * kNN
     * NNBall
     * Cluster
@@ -95,5 +39,108 @@ All possible combinations:
         * MinCut
     * ClusterNN
 
-I could try different choosing algorithms as well - currently just using most common
+I could try different choosing algorithmms as well - currently just using most common
 """
+
+def main(rdr, data, rec, n_jobs):
+    #prepare testing data and splitting data
+    user_test = Utest[:,-1].toarray().flatten().astype('int')
+    y = np.zeros((user_test.shape[0], 2), dtype='int')-1
+    for i in range(len(y)):
+        recipes = Utest[i].nonzero()[1][:-1]
+        if len(recipes) == 1:
+            y[i,0] = recipes
+        elif len(recipes) == 2:
+            y[i,:] = recipes
+        else:
+            raise ValueError("Someone reviewed 3 recipes!")
+    y_blank = np.zeros((U.shape[0], 2))
+    y_tog = np.concatenate([y, y_blank])
+
+    test_fold = np.concatenate([
+        # The training data.
+        np.full(user_test.shape[0], 0, dtype=np.int8),
+        # The development data.
+        np.full(U.shape[0], -1, dtype=np.int8)
+    ])
+    cv = PredefinedSplit(test_fold)
+
+    ###### CHANGE EVERYTHING THAT MIGHT NEED TO BE TWEAKED HERE ########
+    filename = f"results/user_{data}_{rec}.pkl"
+    if data == "U":
+        data = U
+    elif data == "Uhat":
+        data = Uhat
+
+    if rec == "sum":
+        recommend = recommend_sum
+    elif rec == "fr":
+        recommend = recommend_freq_rating
+    elif rec == "rf":
+        recommend = recommend_rating_freq
+
+    if rdr == "kNN":
+        rdr_class = userKNN(recommend=recommend)
+        rdr_params = {"rdr__metric": ['minkowski', 'cosine'],
+                        "rdr__n_neighbors": [2, 10, 50, 100]}
+    elif rdr == "NNBall":
+        rdr_class = userNNBall(recommend=recommend)
+        rdr_params = {"rdr__radius": [0.5, 1, 3, 5]}
+    elif rdr == "KMeans":
+        rdr_class = userCluster(algorithm='kmeans', recommend=recommend)
+        rdr_params = {"rdr__n_clusters": [10, 30, 50, 100]}
+    elif rdr == "GMM":
+        rdr_class = userCluster(algorithm='gmm', recommend=recommend)
+        rdr_params = {"rdr__n_clusters": [10, 30, 50, 100]}
+    elif rdr == "KMeansNN":
+        rdr_class = userClusterKNN(algorithm='kmeans', recommend=recommend)
+        rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
+                        "rdr__metric": ['minkowski', 'cosine'],
+                        "rdr__n_neighbors": [2, 10, 50, 100]}
+    elif rdr == "GMMNN":
+        rdr_class = userClusterKNN(algorithm='gmm', recommend=recommend)
+        rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
+                        "rdr__metric": ['minkowski', 'cosine'],
+                        "rdr__n_neighbors": [2, 10, 50, 100]}
+
+    ###### Actual Grid search is right here, we'll essentially do everything one at a time #############
+    U_tog = sparse.vstack([data[user_test], data])
+
+    dr_options = [TruncatedSVD(), KernelPCA(), NMF(), LatentDirichletAllocation()]
+    dr_names = ["PCA", "KPCA", "NMF", "LDA"]
+
+    #iterate through all dimension reducers as we go!
+    for dr, dr_class in zip(dr_names, dr_options):
+        print(f"######### {dr} #############")
+        
+        pipe = Pipeline([("dr", dr_class),
+                        ("rdr", rdr_class)])
+
+        params = {"dr__n_components": [20, 40, 60, 80, 100],
+                    **rdr_params
+                    }
+        if dr == "KPCA":
+            params = {"dr__kernel": ["linear", "poly", "rbf"], **params}
+
+        gs = GridSearchCV(pipe, params, cv=cv, verbose=3, refit=False, n_jobs=n_jobs)
+        gs.fit(U_tog, y_tog)
+        results = pd.DataFrame(gs.cv_results_)
+
+        #open all data files
+        scores = pd.read_pickle(filename)
+
+        #save all data
+        temp = results[results["params"]==gs.best_params_]
+        scores[rdr][dr] = (gs.best_score_, temp["mean_fit_time"].iloc[0], 
+                        temp["mean_score_time"].iloc[0], gs.best_params_)
+        scores.to_pickle(filename)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Recommender System Grid Search")
+    parser.add_argument("--n_jobs", type=int, required=True)
+    parser.add_argument("--data", type=str, required=True)
+    parser.add_argument("--rec", type=str, required=True)
+    parser.add_argument("--rdr", type=str, required=True)
+    args = parser.parse_args()
+    kwargs = vars(args)
+    main(**kwargs)
