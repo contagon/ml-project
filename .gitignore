@@ -4,3 +4,4 @@
 *.csv
 *.zip
 data-og/*.pkl
+**/.vscode
