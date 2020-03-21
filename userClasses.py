@@ -108,12 +108,15 @@ class userKNN(Recommender):
 
 
 class userNNBall(Recommender):
-    def __init__(self, radius=1, metric='minkowski', algorithm='brute', recommend=recommend_sum):
+    def __init__(self, radius=1, metric='minkowski', algorithm='brute', recommend=recommend_sum, log='NNBall'):
         self.radius    = radius
         self.metric    = metric
         self.algorithm = algorithm
         self.estimator = NearestNeighbors(radius=self.radius, metric=metric, algorithm = algorithm)
         self.recommend = recommend
+        self.log = log
+        with open(self.log+".log", 'a+') as f:
+            f.write(f"{datetime.now()}. NNBall started. radius={self.radius}, metric={self.metric}.\n") 
 
     def fit(self, X, y=None):
         self.estimator.fit(X)
@@ -124,12 +127,16 @@ class userNNBall(Recommender):
         distances, idxs = self.estimator.radius_neighbors(X)
 
         #get recommendations based on those users
-        rec_recipes = np.array([self.recommend(idx[distance!=0]) for i, (distance, idx) in enumerate(zip(distances, idxs))])
+        return np.array([self.recommend(idx[distance!=0]) for i, (distance, idx) in enumerate(zip(distances, idxs))])
 
-        return rec_recipes
+    def score(self, X, y):
+        score = super().score(X, y)
+        with open(self.log+".log", 'a+') as f:
+            f.write(f"{datetime.now()}. NNBall finished. radius={self.radius}, metric={self.metric}, score={score}.\n") 
+        return score
 
 class userCluster(Recommender):
-    def __init__(self, algorithm='kmeans', recommend=recommend_sum, n_clusters=10):
+    def __init__(self, algorithm='kmeans', recommend=recommend_sum, n_clusters=10, log='cluster'):
         self.n_clusters = n_clusters
         self.algorithm = algorithm
         if algorithm == 'kmeans':
@@ -139,6 +146,9 @@ class userCluster(Recommender):
         elif algorithm == 'mincut':
             self.clusterer = SpectralClustering(n_clusters=n_clusters)
         self.recommend = recommend
+        self.log = log
+        with open(self.log+".log", 'a+') as f:
+            f.write(f"{datetime.now()}. Cluster started. algo={self.algorithm}, n_clusters={self.n_clusters}.\n") 
 
     def fit(self, X, y=None):
         self.labels = self.clusterer.fit_predict(X)
@@ -151,8 +161,14 @@ class userCluster(Recommender):
         #get recommendations based on those users (all users in the same cluster)
         return np.array([self.recommend( np.argwhere(self.labels==label).flatten() ) for i, label in enumerate(labels)])
 
+    def score(self, X, y):
+        score = super().score(X, y)
+        with open(self.log+".log", 'a+') as f:
+            f.write(f"{datetime.now()}. Cluster started. algo={self.algorithm}, n_clusters={self.n_clusters}, score={score}.\n") 
+        return score
+
 class userClusterKNN(Recommender):
-    def __init__(self, algorithm='kmeans', n_neighbors=5, metric="minkowski", recommend=recommend_sum, n_clusters=10):
+    def __init__(self, algorithm='kmeans', n_neighbors=5, metric="minkowski", recommend=recommend_sum, n_clusters=10, log='clusternn'):
         self.n_clusters = n_clusters
         self.n_neighbors = n_neighbors
         self.metric = metric
@@ -165,6 +181,9 @@ class userClusterKNN(Recommender):
             self.clusterer = SpectralClustering(n_clusters=n_clusters)
         self.knn         = NearestNeighbors(n_neighbors=self.n_neighbors+1, metric=self.metric)
         self.recommend = recommend
+        self.log = log
+        with open(self.log+".log", 'a+') as f:
+            f.write(f"{datetime.now()}. ClusterNN started. algo={self.algorithm}, n_clusters={self.n_clusters}, n_neighbors={self.n_neighbors}, metric={self.metric}.\n") 
 
     def fit(self, X, y=None):
         self.X = X
@@ -191,3 +210,9 @@ class userClusterKNN(Recommender):
             rec_recipes[i]   = self.recommend(idx)
 
         return rec_recipes
+
+    def score(self, X, y):
+        score = super().score(X, y)
+        with open(self.log+".log", 'a+') as f:
+            f.write(f"{datetime.now()}. ClusterNN started. algo={self.algorithm}, n_clusters={self.n_clusters}, n_neighbors={self.n_neighbors}, metric={self.metric}, score={score}.\n") 
+        return score

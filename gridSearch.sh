@@ -34,5 +34,3 @@ sleep 30
 
 echo "Starting py file..."
 python gridSearch.py --data ${data} --rec ${rec} --n_jobs -1 --rdr kNN --profile ${profile}
-#python test.py --profile ${profile}
-

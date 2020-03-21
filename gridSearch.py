@@ -1,8 +1,8 @@
 #load all data
 print("Python file starting....")
 from scipy import sparse
-X     = sparse.load_npz("data-cleaned/recipes.npz")
-Xhat  = sparse.load_npz("data-cleaned/recipes_tfidf.npz")
+R     = sparse.load_npz("data-cleaned/recipes.npz")
+Rhat  = sparse.load_npz("data-cleaned/recipes_tfidf.npz")
 U     = sparse.load_npz("data-cleaned/user_train.npz")
 Uhat  = sparse.load_npz("data-cleaned/user_train_tfidf.npz")
 Utest = sparse.load_npz("data-cleaned/user_test.npz")
@@ -98,21 +98,21 @@ def main(rdr, data, rec, n_jobs, profile):
         rdr_params = {"rdr__metric": ['minkowski', 'cosine'],
                         "rdr__n_neighbors": [2, 10, 50, 100]}
     elif rdr == "NNBall":
-        rdr_class = userNNBall(recommend=recommend)
+        rdr_class = userNNBall(recommend=recommend, log=profile)
         rdr_params = {"rdr__radius": [0.5, 1, 3, 5]}
     elif rdr == "KMeans":
-        rdr_class = userCluster(algorithm='kmeans', recommend=recommend)
+        rdr_class = userCluster(algorithm='kmeans', recommend=recommend, log=profile)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100]}
     elif rdr == "GMM":
-        rdr_class = userCluster(algorithm='gmm', recommend=recommend)
+        rdr_class = userCluster(algorithm='gmm', recommend=recommend, log=profile)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100]}
     elif rdr == "KMeansNN":
-        rdr_class = userClusterKNN(algorithm='kmeans', recommend=recommend)
+        rdr_class = userClusterKNN(algorithm='kmeans', recommend=recommend, log=profile)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
                         "rdr__metric": ['minkowski', 'cosine'],
                         "rdr__n_neighbors": [2, 10, 50, 100]}
     elif rdr == "GMMNN":
-        rdr_class = userClusterKNN(algorithm='gmm', recommend=recommend)
+        rdr_class = userClusterKNN(algorithm='gmm', recommend=recommend, log=profile)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
                         "rdr__metric": ['minkowski', 'cosine'],
                         "rdr__n_neighbors": [2, 10, 50, 100]}

@@ -23,6 +23,7 @@ def recommend_scoring(y_true, y_pred):
     for i, (yi, y_predi) in enumerate(zip(y_true, y_pred)):
         #iterate through each liked recipe to find closest
         for l in yi:
+            #if they didn't like enough, skip the blank spots
             if l == -1:
                 continue
             max_scores[i] = np.maximum(max_scores[i], recipe_score(l, y_predi))
