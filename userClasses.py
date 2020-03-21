@@ -3,6 +3,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import NearestNeighbors
 from baseUtils import *
 import heapq
+from datetime import datetime
 
 U     = sparse.load_npz("data-cleaned/user_train.npz")
 REC = 5
@@ -78,12 +79,15 @@ def recommend_sum(user_idx):
         return np.array([k[1] for k in tog[:REC]]) 
 
 class userKNN(Recommender):
-    def __init__(self, n_neighbors=5, metric='minkowski', algorithm='brute', recommend=recommend_sum):
+    def __init__(self, n_neighbors=5, metric='minkowski', algorithm='brute', recommend=recommend_sum, log="knn"):
         self.n_neighbors = n_neighbors #add one to exclude ourself
         self.metric      = metric
         self.algorithm   = algorithm
         self.estimator   = NearestNeighbors(n_neighbors=self.n_neighbors+1, metric=metric, algorithm = algorithm)
         self.recommend = recommend
+        self.log = log
+        with open(self.log+".log", 'a+') as f:
+            f.write(f"{datetime.now()}. kNN started. n_neighbors={self.n_neighbors}, metric={self.metric}.\n") 
 
     def fit(self, X, y=None):
         self.estimator.fit(X)
@@ -95,6 +99,13 @@ class userKNN(Recommender):
 
         #get recommendations based on those users
         return np.array([self.recommend(idx) for i, idx in enumerate(idxs)])
+
+    def score(self, X, y):
+        score = super().score(X, y)
+        with open(self.log+".log", 'a+') as f:
+            f.write(f"{datetime.now()}. kNN finished. n_neighbors={self.n_neighbors}, metric={self.metric}, score={score}.\n") 
+        return score
+
 
 class userNNBall(Recommender):
     def __init__(self, radius=1, metric='minkowski', algorithm='brute', recommend=recommend_sum):

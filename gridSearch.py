@@ -1,10 +1,18 @@
 #load all data
+print("Python file starting....")
 from scipy import sparse
 X     = sparse.load_npz("data-cleaned/recipes.npz")
 Xhat  = sparse.load_npz("data-cleaned/recipes_tfidf.npz")
 U     = sparse.load_npz("data-cleaned/user_train.npz")
 Uhat  = sparse.load_npz("data-cleaned/user_train_tfidf.npz")
 Utest = sparse.load_npz("data-cleaned/user_test.npz")
+
+#for multi-processing stuff
+#from sklearn.externals.joblib import Parallel, parallel_backend, register_parallel_backend
+from joblib import Parallel, parallel_backend, register_parallel_backend
+
+from ipyparallel import Client
+from ipyparallel.joblib import IPythonParallelBackend
 
 #misc imports
 import pandas as pd
@@ -18,7 +26,6 @@ from sklearn.decomposition import TruncatedSVD, NMF, PCA, \
 #import grid search utilities
 from sklearn.model_selection import PredefinedSplit, GridSearchCV
 from sklearn.pipeline import Pipeline
-
 """
 All possible combinations:
 1.  Dimension Reduction:
@@ -41,8 +48,8 @@ All possible combinations:
 
 I could try different choosing algorithmms as well - currently just using most common
 """
-
-def main(rdr, data, rec, n_jobs):
+def main(rdr, data, rec, n_jobs, profile):
+    print(rdr, data, rec, n_jobs)
     #prepare testing data and splitting data
     user_test = Utest[:,-1].toarray().flatten().astype('int')
     y = np.zeros((user_test.shape[0], 2), dtype='int')-1
@@ -64,6 +71,13 @@ def main(rdr, data, rec, n_jobs):
         np.full(U.shape[0], -1, dtype=np.int8)
     ])
     cv = PredefinedSplit(test_fold)
+    
+    ###### GET ALL BACKUP PROCESSES READY AND RUNNING
+    c = Client(profile=profile)
+    print(c.ids)
+    bview = c.load_balanced_view()
+
+    register_parallel_backend('ipyparallel', lambda : IPythonParallelBackend(view=bview))
 
     ###### CHANGE EVERYTHING THAT MIGHT NEED TO BE TWEAKED HERE ########
     filename = f"results/user_{data}_{rec}.pkl"
@@ -80,7 +94,7 @@ def main(rdr, data, rec, n_jobs):
         recommend = recommend_rating_freq
 
     if rdr == "kNN":
-        rdr_class = userKNN(recommend=recommend)
+        rdr_class = userKNN(recommend=recommend, log=profile)
         rdr_params = {"rdr__metric": ['minkowski', 'cosine'],
                         "rdr__n_neighbors": [2, 10, 50, 100]}
     elif rdr == "NNBall":
@@ -122,8 +136,9 @@ def main(rdr, data, rec, n_jobs):
         if dr == "KPCA":
             params = {"dr__kernel": ["linear", "poly", "rbf"], **params}
 
-        gs = GridSearchCV(pipe, params, cv=cv, verbose=3, refit=False, n_jobs=n_jobs)
-        gs.fit(U_tog, y_tog)
+        gs = GridSearchCV(pipe, params, cv=cv, verbose=51, refit=False, n_jobs=n_jobs, pre_dispatch='n_jobs')
+        with parallel_backend('ipyparallel'):
+            gs.fit(U_tog, y_tog)
         results = pd.DataFrame(gs.cv_results_)
 
         #open all data files
@@ -141,6 +156,7 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=str, required=True)
     parser.add_argument("--rec", type=str, required=True)
     parser.add_argument("--rdr", type=str, required=True)
+    parser.add_argument("--profile", type=str, default="ipy_profile")
     args = parser.parse_args()
     kwargs = vars(args)
     main(**kwargs)

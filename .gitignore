@@ -3,5 +3,7 @@
 *.un~
 *.csv
 *.zip
+*.out
+*.log
 data-og/*.pkl
 **/.vscode
