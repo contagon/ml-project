@@ -42,7 +42,8 @@ def user_to_recipe(users, rating, tfidf=False):
     return sparse.csr_matrix((counts, [row_users, column_item]), shape=(users.shape[0], num_items), dtype=np.float)
 
 class recipeKNN(Recommender):
-    def __init__(self, metric='minkowski', algorithm='brute', log="knn"):
+    def __init__(self, metric='minkowski', algorithm='brute', log="recknn", sc='int'):
+        self.sc = sc
         self.metric      = metric
         self.algorithm   = algorithm
         self.estimator   = NearestNeighbors(n_neighbors=REC, metric=metric, algorithm = algorithm)
