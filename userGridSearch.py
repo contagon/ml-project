@@ -49,7 +49,7 @@ I could try different choosing algorithmms as well - currently just using most c
 """
 def main(rdr, data, sc, rec, n_jobs, profile):
     with open(profile+".log", 'a+') as f:
-            f.write(f"rdr, data, rec, n_jobs")
+            f.write(f"{rdr}, {data}, {sc} \n")
     #prepare testing data and splitting data
     user_test = Utest[:,-1].toarray().flatten().astype('int')
     y = np.zeros((user_test.shape[0], 2), dtype='int')-1
@@ -126,7 +126,7 @@ def main(rdr, data, sc, rec, n_jobs, profile):
     #iterate through all dimension reducers as we go!
     for dr, dr_class in zip(dr_names, dr_options):
         with open(profile+".log", 'a+') as f:
-            f.write(f"######### {dr} #############")
+            f.write(f"######### {dr} ############# \n")
         
         pipe = Pipeline([("dr", dr_class),
                         ("rdr", rdr_class)])

@@ -2,7 +2,7 @@
 
 #SBATCH --array=0-3
 #SBATCH --mem-per-cpu=16GB
-#SBATCH --time=2-00:0:0
+#SBATCH --time=1-01:0:0
 #SBATCH --cpus-per-task=8
 #SBATCH -J "knn"   # job name
 #SBATCH --nodes=1   # limit to one node
