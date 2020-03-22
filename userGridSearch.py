@@ -1,5 +1,4 @@
 #load all data
-print("Python file starting....")
 from scipy import sparse
 R     = sparse.load_npz("data-cleaned/recipes.npz")
 Rhat  = sparse.load_npz("data-cleaned/recipes_tfidf.npz")
@@ -48,8 +47,9 @@ All possible combinations:
 
 I could try different choosing algorithmms as well - currently just using most common
 """
-def main(rdr, data, rec, n_jobs, profile):
-    print(rdr, data, rec, n_jobs)
+def main(rdr, data, sc, rec, n_jobs, profile):
+    with open(profile+".log", 'a+') as f:
+            f.write(f"rdr, data, rec, n_jobs")
     #prepare testing data and splitting data
     user_test = Utest[:,-1].toarray().flatten().astype('int')
     y = np.zeros((user_test.shape[0], 2), dtype='int')-1
@@ -80,7 +80,7 @@ def main(rdr, data, rec, n_jobs, profile):
     register_parallel_backend('ipyparallel', lambda : IPythonParallelBackend(view=bview))
 
     ###### CHANGE EVERYTHING THAT MIGHT NEED TO BE TWEAKED HERE ########
-    filename = f"results/user_{data}_{rec}.pkl"
+    filename = f"results/user_{data}_{sc}.pkl"
     if data == "U":
         data = U
     elif data == "Uhat":
@@ -94,25 +94,25 @@ def main(rdr, data, rec, n_jobs, profile):
         recommend = recommend_rating_freq
 
     if rdr == "kNN":
-        rdr_class = userKNN(recommend=recommend, log=profile)
+        rdr_class = userKNN(recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__metric": ['minkowski', 'cosine'],
                         "rdr__n_neighbors": [2, 10, 50, 100]}
     elif rdr == "NNBall":
-        rdr_class = userNNBall(recommend=recommend, log=profile)
+        rdr_class = userNNBall(recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__radius": [0.5, 1, 3, 5]}
     elif rdr == "KMeans":
-        rdr_class = userCluster(algorithm='kmeans', recommend=recommend, log=profile)
+        rdr_class = userCluster(algorithm='kmeans', recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100]}
     elif rdr == "GMM":
-        rdr_class = userCluster(algorithm='gmm', recommend=recommend, log=profile)
+        rdr_class = userCluster(algorithm='gmm', recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100]}
     elif rdr == "KMeansNN":
-        rdr_class = userClusterKNN(algorithm='kmeans', recommend=recommend, log=profile)
+        rdr_class = userClusterKNN(algorithm='kmeans', recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
                         "rdr__metric": ['minkowski', 'cosine'],
                         "rdr__n_neighbors": [2, 10, 50, 100]}
     elif rdr == "GMMNN":
-        rdr_class = userClusterKNN(algorithm='gmm', recommend=recommend, log=profile)
+        rdr_class = userClusterKNN(algorithm='gmm', recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
                         "rdr__metric": ['minkowski', 'cosine'],
                         "rdr__n_neighbors": [2, 10, 50, 100]}
@@ -120,12 +120,13 @@ def main(rdr, data, rec, n_jobs, profile):
     ###### Actual Grid search is right here, we'll essentially do everything one at a time #############
     U_tog = sparse.vstack([data[user_test], data])
 
-    dr_options = [TruncatedSVD(), KernelPCA(), NMF(), LatentDirichletAllocation()]
-    dr_names = ["PCA", "KPCA", "NMF", "LDA"]
+    dr_options = [TruncatedSVD(), NMF(solver='mu'), LatentDirichletAllocation(learning_method='online'), KernelPCA(eigen_solver="arpack")]
+    dr_names = ["PCA", "NMF", "LDA", "KPCA"]
 
     #iterate through all dimension reducers as we go!
     for dr, dr_class in zip(dr_names, dr_options):
-        print(f"######### {dr} #############")
+        with open(profile+".log", 'a+') as f:
+            f.write(f"######### {dr} #############")
         
         pipe = Pipeline([("dr", dr_class),
                         ("rdr", rdr_class)])
@@ -134,7 +135,9 @@ def main(rdr, data, rec, n_jobs, profile):
                     **rdr_params
                     }
         if dr == "KPCA":
-            params = {"dr__kernel": ["linear", "poly", "rbf"], **params}
+            params = {"dr__kernel": ["linear", "poly", "rbf"], 
+                    "dr__n_components": [20, 60, 100],
+                    **rdr_params}
 
         gs = GridSearchCV(pipe, params, cv=cv, verbose=51, refit=False, n_jobs=n_jobs, pre_dispatch='n_jobs')
         with parallel_backend('ipyparallel'):
@@ -152,11 +155,12 @@ def main(rdr, data, rec, n_jobs, profile):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Recommender System Grid Search")
-    parser.add_argument("--n_jobs", type=int, required=True)
+    parser.add_argument("--n_jobs", type=int, default=-1)
     parser.add_argument("--data", type=str, required=True)
-    parser.add_argument("--rec", type=str, required=True)
+    parser.add_argument("--rec", type=str, default='sum')
     parser.add_argument("--rdr", type=str, required=True)
     parser.add_argument("--profile", type=str, default="ipy_profile")
+    parser.add_argument("--sc", type=str, default="int")
     args = parser.parse_args()
     kwargs = vars(args)
     main(**kwargs)

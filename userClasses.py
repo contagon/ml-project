@@ -79,7 +79,8 @@ def recommend_sum(user_idx):
         return np.array([k[1] for k in tog[:REC]]) 
 
 class userKNN(Recommender):
-    def __init__(self, n_neighbors=5, metric='minkowski', algorithm='brute', recommend=recommend_sum, log="knn"):
+    def __init__(self, n_neighbors=5, metric='minkowski', algorithm='brute', recommend=recommend_sum, log="knn", sc='int'):
+        self.sc = sc
         self.n_neighbors = n_neighbors #add one to exclude ourself
         self.metric      = metric
         self.algorithm   = algorithm
@@ -108,7 +109,8 @@ class userKNN(Recommender):
 
 
 class userNNBall(Recommender):
-    def __init__(self, radius=1, metric='minkowski', algorithm='brute', recommend=recommend_sum, log='NNBall'):
+    def __init__(self, radius=1, metric='minkowski', algorithm='brute', recommend=recommend_sum, log='NNBall', sc='int'):
+        self.sc = sc
         self.radius    = radius
         self.metric    = metric
         self.algorithm = algorithm
@@ -136,7 +138,8 @@ class userNNBall(Recommender):
         return score
 
 class userCluster(Recommender):
-    def __init__(self, algorithm='kmeans', recommend=recommend_sum, n_clusters=10, log='cluster'):
+    def __init__(self, algorithm='kmeans', recommend=recommend_sum, n_clusters=10, log='cluster', sc='int'):
+        self.sc = sc
         self.n_clusters = n_clusters
         self.algorithm = algorithm
         if algorithm == 'kmeans':
@@ -168,7 +171,8 @@ class userCluster(Recommender):
         return score
 
 class userClusterKNN(Recommender):
-    def __init__(self, algorithm='kmeans', n_neighbors=5, metric="minkowski", recommend=recommend_sum, n_clusters=10, log='clusternn'):
+    def __init__(self, algorithm='kmeans', n_neighbors=5, metric="minkowski", recommend=recommend_sum, n_clusters=10, log='clusternn', sc='int'):
+        self.sc = sc
         self.n_clusters = n_clusters
         self.n_neighbors = n_neighbors
         self.metric = metric

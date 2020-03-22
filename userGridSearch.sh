@@ -1,23 +1,23 @@
 #!/bin/env bash
 
-#SBATCH --array=0-5
+#SBATCH --array=0-3
 #SBATCH --mem-per-cpu=16GB
-#SBATCH --time=0-11:0:0
+#SBATCH --time=2-00:0:0
 #SBATCH --cpus-per-task=8
 #SBATCH -J "knn"   # job name
 #SBATCH --nodes=1   # limit to one node
 
 
-rec_values=( sum fr rf )
+sc_values=( int com )
 data_values=( U Uhat )
 
 trial=${SLURM_ARRAY_TASK_ID}
-rec=${rec_values[$(( trial % ${#rec_values[@]} ))]}
-trial=$(( trial / ${#rec_values[@]} ))
+sc=${sc_values[$(( trial % ${#sc_values[@]} ))]}
+trial=$(( trial / ${#sc_values[@]} ))
 data=${data_values[$(( trial % ${#data_values[@]} ))]}
 
 
-## use ${rec}, ${data} below
+## use ${sc}, ${data} below
 module load miniconda3
 source activate ml
 
@@ -33,4 +33,4 @@ sleep 30
 
 
 echo "Starting py file..."
-python gridSearch.py --data ${data} --rec ${rec} --n_jobs -1 --rdr kNN --profile ${profile}
+python userGridSearch.py --data ${data} --sc ${sc} --n_jobs -1 --rdr kNN --profile ${profile}
