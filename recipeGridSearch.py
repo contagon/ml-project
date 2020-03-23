@@ -97,7 +97,7 @@ def main(rdr, data, rating, sc, n_jobs, profile):
         pipe = Pipeline([("dr", dr_class),
                         ("rdr", rdr_class)])
 
-        params = {"dr__n_components": [20],#, 40, 60, 80, 100],
+        params = {"dr__n_components": [20, 40, 60, 80, 100],
                     **rdr_params
                     }
         if dr == "KPCA":

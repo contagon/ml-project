@@ -4,7 +4,7 @@
 #SBATCH --mem-per-cpu=16GB
 #SBATCH --time=1-01:0:0
 #SBATCH --cpus-per-task=8
-#SBATCH -J "knn"   # job name
+### SBATCH -J "user_$1"   # job name
 #SBATCH --nodes=1   # limit to one node
 
 
@@ -22,7 +22,7 @@ module load miniconda3
 source activate ml
 
 #create profile so we can find cluster, also start cluster
-profile=job_${SLURM_JOB_ID}
+profile=slurm-${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
 ipython profile create ${profile}
 sleep 10
 ipcluster start --profile=${profile} -n 8 &
@@ -33,4 +33,4 @@ sleep 30
 
 
 echo "Starting py file..."
-python userGridSearch.py --data ${data} --sc ${sc} --n_jobs -1 --rdr kNN --profile ${profile}
+python userGridSearch.py --data ${data} --sc ${sc} --n_jobs -1 --rdr $1 --profile ${profile}

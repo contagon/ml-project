@@ -103,11 +103,19 @@ def main(rdr, data, sc, rec, n_jobs, profile):
     elif rdr == "KMeans":
         rdr_class = userCluster(algorithm='kmeans', recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100]}
+    elif rdr == "MinCut":
+        rdr_class = userCluster(algorithm='mincut', recommend=recommend, log=profile, sc=sc)
+        rdr_params = {"rdr__n_clusters": [10, 30, 50, 100]}
     elif rdr == "GMM":
         rdr_class = userCluster(algorithm='gmm', recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100]}
     elif rdr == "KMeansNN":
         rdr_class = userClusterKNN(algorithm='kmeans', recommend=recommend, log=profile, sc=sc)
+        rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
+                        "rdr__metric": ['minkowski', 'cosine'],
+                        "rdr__n_neighbors": [2, 10, 50, 100]}
+    elif rdr == "MinCutNN":
+        rdr_class = userClusterKNN(algorithm='mincut', recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
                         "rdr__metric": ['minkowski', 'cosine'],
                         "rdr__n_neighbors": [2, 10, 50, 100]}
