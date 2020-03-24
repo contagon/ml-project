@@ -154,12 +154,22 @@ class userCluster(Recommender):
             f.write(f"{datetime.now()}. Cluster started. algo={self.algorithm}, n_clusters={self.n_clusters}.\n") 
 
     def fit(self, X, y=None):
+        self.X = X
         self.labels = self.clusterer.fit_predict(X)
         return self
 
     def predict(self, X):
         #find clusters of users
-        labels = self.clusterer.predict(X)
+        idx = []
+        j = 0
+        for i in range(self.X.shape[0]):
+            if np.allclose(self.X[i], X[j]):
+                idx.append(i)
+                j += 1
+            if j >= X.shape[0]:
+                break
+        idx = np.array(idx)
+        labels = self.labels[idx]
 
         #get recommendations based on those users (all users in the same cluster)
         return np.array([self.recommend( np.argwhere(self.labels==label).flatten() ) for i, label in enumerate(labels)])
@@ -196,7 +206,17 @@ class userClusterKNN(Recommender):
 
     def predict(self, X):
         #find closest users
-        labels = self.clusterer.predict(X)
+         #find clusters of users
+        idx = []
+        j = 0
+        for i in range(self.X.shape[0]):
+            if np.allclose(self.X[i], X[j]):
+                idx.append(i)
+                j += 1
+            if j >= X.shape[0]:
+                break
+        idx = np.array(idx)
+        labels = self.labels[idx]
 
         rec_recipes = np.zeros((X.shape[0], REC), dtype='int')
         #iterate through each user's cluster
