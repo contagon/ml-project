@@ -86,8 +86,10 @@ def main(rdr, data, rating, sc, n_jobs, profile):
     ###### Actual Grid search is right here, we'll essentially do everything one at a time #############
     R_tog = sparse.vstack([Urecipe, data])
 
-    dr_options = [TruncatedSVD(), NMF(solver='mu'), LatentDirichletAllocation(learning_method='online'), KernelPCA(eigen_solver="arpack")]
-    dr_names = ["PCA", "NMF", "LDA", "KPCA"]
+    #dr_options = [TruncatedSVD(), NMF(solver='mu'), LatentDirichletAllocation(learning_method='online'), KernelPCA(eigen_solver="arpack")]
+    #dr_names = ["PCA", "NMF", "LDA", "KPCA"]
+    dr_options = [KernelPCA(eigen_solver="arpack")]
+    dr_names = ["KPCA"]
 
     #iterate through all dimension reducers as we go!
     for dr, dr_class in zip(dr_names, dr_options):
@@ -118,6 +120,9 @@ def main(rdr, data, rating, sc, n_jobs, profile):
         scores[rating][dr] = (gs.best_score_, temp["mean_fit_time"].iloc[0], 
                         temp["mean_score_time"].iloc[0], gs.best_params_)
         scores.to_pickle(filename)
+
+    with open(profile+".log", 'a+') as f:
+        f.write(f"######### FINISHED ############# \n")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Recommender System Grid Search")

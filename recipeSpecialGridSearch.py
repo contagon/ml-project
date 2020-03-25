@@ -120,7 +120,8 @@ def main(rdr, data, rating, sc, n_jobs, profile):
             #if it improved for this iteration of dimension reducing, keep it
             if gs.best_score_ > best_score_:
                 best_score_ = gs.best_score_
-                best_params_ = {**gs.best_params_, **dr_param}
+                best_params_ = gs.best_params_
+                best_dr_params = dr_param
                 results = gs.cv_results_
         #open all data files
         scores = pd.read_pickle(filename)
@@ -129,7 +130,7 @@ def main(rdr, data, rating, sc, n_jobs, profile):
         temp = results[results["params"]==best_params_]
         column = "MkNN_" + rating
         scores[column][dr] = (best_score_, temp["mean_fit_time"].iloc[0], 
-                        temp["mean_score_time"].iloc[0], best_params_)
+                        temp["mean_score_time"].iloc[0], {**best_params_, **best_dr_params})
         scores.to_pickle(filename)
 
 if __name__ == "__main__":
