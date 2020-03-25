@@ -6,6 +6,7 @@ import heapq
 from datetime import datetime
 
 U     = sparse.load_npz("data-cleaned/user_train.npz")
+R     = sparse.load_npz("data-cleaned/recipes.npz")
 REC = 5
 
 def recommend_freq_rating(user_idx):
@@ -28,7 +29,7 @@ def recommend_freq_rating(user_idx):
 
     #return
     if len(tog) < REC:
-        return np.array([k[2] for k in tog] + [-1]*(REC-len(tog)))
+        return np.array([k[2] for k in tog] + list(np.random.choice(R.shape[0], size=REC-len(tog))))
     else:
         return np.array([k[2] for k in tog[:REC]])
 
@@ -52,7 +53,7 @@ def recommend_rating_freq(user_idx):
 
     #return
     if len(tog) < REC:
-        return np.array([k[2] for k in tog] + [-1]*(REC-len(tog)))
+        return np.array([k[2] for k in tog] + list(np.random.choice(R.shape[0], size=REC-len(tog))))
     else:
         return np.array([k[2] for k in tog[:REC]])
 
@@ -74,7 +75,8 @@ def recommend_sum(user_idx):
 
     #return
     if len(tog) < REC:
-        return np.array([k[1] for k in tog] + [-1]*(REC-len(tog)))
+        # return np.array([k[1] for k in tog] + [-1]*(REC-len(tog)))
+        return np.array([k[1] for k in tog] + list(np.random.choice(R.shape[0], size=REC-len(tog))))
     else:
         return np.array([k[1] for k in tog[:REC]]) 
 

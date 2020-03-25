@@ -90,16 +90,25 @@ class recipeMultipleKNN(Recommender):
             idx = u.nonzero()
             ratings = np.array(u[idx]).flatten()
             recipes = idx[1][ratings>=self.rating]
+        
             #find their closest neighbors, making sure not to include self
-            closest = self.estimator.kneighbors(self.R[recipes])[1][:,1:].flatten()
-            
+            #if there isn't any, randomly recommend something
+            if len(recipes) == 0:
+                closest = np.random.choice(self.R.shape[0], size=5)
+            else:
+                closest = self.estimator.kneighbors(self.R[recipes])[1][:,1:].flatten()
+
             #find which ones were most frequent
             recipe_count = dict()
             for recipe in closest:
                 recipe_count[recipe] = recipe_count.get(recipe, 0) + 1
             lst = [(count, recipe) for recipe, count in recipe_count.items()]
-            lst = heapq.nlargest(REC, lst)
-            recommendations[i] = [k[1] for k in lst]
+
+            tog = heapq.nlargest(REC, lst)
+            if len(tog) < REC:
+                recommendations[i] = np.array([k[1] for k in tog] + list(np.random.choice(self.R.shape[0], size=REC-len(tog))))
+            else:
+                recommendations[i] =  np.array([k[1] for k in tog[:REC]])
 
         return recommendations
 
