@@ -147,7 +147,7 @@ class userCluster(Recommender):
         elif algorithm == 'gmm':
             self.clusterer = GaussianMixture(n_components=n_clusters)
         elif algorithm == 'mincut':
-            self.clusterer = SpectralClustering(n_clusters=n_clusters)
+            self.clusterer = SpectralClustering(n_clusters=n_clusters, eigen_solver='amg')
         self.recommend = recommend
         self.log = log
         with open(self.log+".log", 'a+') as f:
@@ -192,7 +192,7 @@ class userClusterKNN(Recommender):
         elif algorithm == 'gmm':
             self.clusterer = GaussianMixture(n_components=n_clusters)
         elif algorithm == 'mincut':
-            self.clusterer = SpectralClustering(n_clusters=n_clusters)
+            self.clusterer = SpectralClustering(n_clusters=n_clusters, eigen_solver='amg')
         self.knn         = NearestNeighbors(n_neighbors=self.n_neighbors+1, metric=self.metric)
         self.recommend = recommend
         self.log = log
