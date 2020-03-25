@@ -1,4 +1,5 @@
 from sklearn.cluster import KMeans, SpectralClustering, DBSCAN
+from sklearn.decomposition import NMF
 from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import NearestNeighbors
 from baseUtils import *
@@ -109,7 +110,6 @@ class userKNN(Recommender):
             f.write(f"{datetime.now()}. kNN finished. n_neighbors={self.n_neighbors}, metric={self.metric}, score={score}.\n") 
         return score
 
-
 class userNNBall(Recommender):
     def __init__(self, radius=1, metric='minkowski', algorithm='brute', recommend=recommend_sum, log='NNBall', sc='int'):
         self.sc = sc
@@ -175,7 +175,7 @@ class userCluster(Recommender):
                 j += 1
             if j >= X.shape[0]:
                 break
-        idx = np.array(idx)
+        idx = np.array(idx, dtype='int')
         labels = self.labels[idx]
 
         #get recommendations based on those users (all users in the same cluster)
@@ -227,7 +227,7 @@ class userClusterKNN(Recommender):
                 j += 1
             if j >= X.shape[0]:
                 break
-        idx = np.array(idx)
+        idx = np.array(idx, dtype=np.int8)
         labels = self.labels[idx]
 
         rec_recipes = np.zeros((X.shape[0], REC), dtype='int')
@@ -252,3 +252,10 @@ class userClusterKNN(Recommender):
         with open(self.log+".log", 'a+') as f:
             f.write(f"{datetime.now()}. ClusterNN started. algo={self.algorithm}, n_clusters={self.n_clusters}, n_neighbors={self.n_neighbors}, metric={self.metric}, score={score}.\n") 
         return score
+
+class MyNMF(NMF):
+    def fit_transform(self, X, y=None, W=None, H=None):
+        return self.fit(X).transform(X)
+    def fit(self, X, y=None, **params):
+        super().fit_transform(X, **params)
+        return self

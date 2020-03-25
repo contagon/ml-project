@@ -61,12 +61,12 @@ def main(rdr, data, sc, rec, n_jobs, profile):
             y[i,:] = recipes
         else:
             raise ValueError("Someone reviewed 3 recipes!")
-    y_blank = np.zeros((U.shape[0], 2))
+    y_blank = np.zeros((U.shape[0], 2), dtype='int')
     y_tog = np.concatenate([y, y_blank])
 
     test_fold = np.concatenate([
         # The training data.
-        np.full(user_test.shape[0], 0, dtype=np.int8),
+        np.full(user_test.shape[0], 0, dtype='int'),
         # The development data.
         np.full(U.shape[0], -1, dtype=np.int8)
     ])
@@ -137,7 +137,7 @@ def main(rdr, data, sc, rec, n_jobs, profile):
     ###### Actual Grid search is right here, we'll essentially do everything one at a time #############
     U_tog = sparse.vstack([data[user_test], data])
 
-    dr_options = [TruncatedSVD(), NMF(solver='mu'), LatentDirichletAllocation(learning_method='online'), KernelPCA(eigen_solver="arpack")]
+    dr_options = [TruncatedSVD(), MyNMF(solver='mu'), LatentDirichletAllocation(learning_method='online'), KernelPCA(eigen_solver="arpack")]
     dr_names = ["PCA", "NMF", "LDA", "KPCA"]
 
     #iterate through all dimension reducers as we go!
