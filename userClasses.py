@@ -138,14 +138,19 @@ class userNNBall(Recommender):
         return score
 
 class userCluster(Recommender):
-    def __init__(self, algorithm='kmeans', recommend=recommend_sum, n_clusters=10, log='cluster', sc='int'):
+    def __init__(self, algorithm='kmeans', recommend=recommend_sum, n_clusters=10, log='cluster', sc='int', eps=0.5, min_samples=5):
         self.sc = sc
         self.n_clusters = n_clusters
         self.algorithm = algorithm
+        #used for DBSCAN
+        self.eps = eps
+        self.min_samples = min_samples
         if algorithm == 'kmeans':
             self.clusterer = KMeans(n_clusters=n_clusters)
         elif algorithm == 'gmm':
             self.clusterer = GaussianMixture(n_components=n_clusters)
+        elif algorithm == 'dbscan':
+            self.clusterer = DBSCAN(eps=eps, min_samples=min_samples)
         elif algorithm == 'mincut':
             self.clusterer = SpectralClustering(n_clusters=n_clusters, eigen_solver='amg')
         self.recommend = recommend
@@ -181,16 +186,21 @@ class userCluster(Recommender):
         return score
 
 class userClusterKNN(Recommender):
-    def __init__(self, algorithm='kmeans', n_neighbors=5, metric="minkowski", recommend=recommend_sum, n_clusters=10, log='clusternn', sc='int'):
+    def __init__(self, algorithm='kmeans', n_neighbors=5, metric="minkowski", recommend=recommend_sum, n_clusters=10, log='clusternn', sc='int',eps=0.5, min_samples=5):
         self.sc = sc
         self.n_clusters = n_clusters
         self.n_neighbors = n_neighbors
         self.metric = metric
         self.algorithm = algorithm
+        #used for DBSCAN
+        self.eps = eps
+        self.min_samples = min_samples
         if algorithm == 'kmeans':
             self.clusterer = KMeans(n_clusters=n_clusters)
         elif algorithm == 'gmm':
             self.clusterer = GaussianMixture(n_components=n_clusters)
+        elif algorithm == 'dbscan':
+            self.clusterer = DBSCAN(eps=eps, min_samples=min_samples)
         elif algorithm == 'mincut':
             self.clusterer = SpectralClustering(n_clusters=n_clusters, eigen_solver='amg')
         self.knn         = NearestNeighbors(n_neighbors=self.n_neighbors+1, metric=self.metric)

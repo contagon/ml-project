@@ -109,6 +109,10 @@ def main(rdr, data, sc, rec, n_jobs, profile):
     elif rdr == "GMM":
         rdr_class = userCluster(algorithm='gmm', recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100]}
+    elif rdr == "DBSCAN":
+        rdr_class = userCluster(algorithm='dbscan', recommend=recommend, log=profile, sc=sc)
+        rdr_params = {"rdr__eps": [.25, .5, .75, 1],
+                    "rdr__min_samples": [2, 5, 10, 20]}
     elif rdr == "KMeansNN":
         rdr_class = userClusterKNN(algorithm='kmeans', recommend=recommend, log=profile, sc=sc)
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
@@ -124,6 +128,11 @@ def main(rdr, data, sc, rec, n_jobs, profile):
         rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
                         "rdr__metric": ['minkowski', 'cosine'],
                         "rdr__n_neighbors": [2, 10, 50, 100]}
+    elif rdr == "DBSCANNN":
+        rdr_class = userClusterKNN(algorithm='dbscan', recommend=recommend, log=profile, sc=sc)
+        rdr_params = {"rdr__n_clusters": [10, 30, 50, 100],
+                    "rdr__eps": [.25, .5, .75, 1],
+                    "rdr__min_samples": [2, 5, 10, 20]}
 
     ###### Actual Grid search is right here, we'll essentially do everything one at a time #############
     U_tog = sparse.vstack([data[user_test], data])

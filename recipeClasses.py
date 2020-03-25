@@ -64,3 +64,47 @@ class recipeKNN(Recommender):
         with open(self.log+".log", 'a+') as f:
             f.write(f"{datetime.now()}. recipeKNN finished. metric={self.metric}, score={score}.\n") 
         return score
+
+
+class recipeMultipleKNN(Recommender):
+    def __init__(self, metric='minkowski', rating=5, R=None, algorithm='brute', log="recmultknn", sc='int', n_neighbors=5):
+        self.sc = sc
+        self.R = R
+        self.metric      = metric
+        self.algorithm   = algorithm
+        self.n_neighbors = n_neighbors
+        self.rating = rating
+        self.estimator   = NearestNeighbors(metric=metric, algorithm=algorithm, n_neighbors=n_neighbors)
+        self.log = log
+        with open(self.log+".log", 'a+') as f:
+            f.write(f"{datetime.now()}. recipeKNN started. metric={self.metric}.\n") 
+
+    def fit(self, X, y=None):
+        self.estimator.fit(self.R)
+        return self
+
+    def predict(self, X):
+        recommendations = np.zeros((X.shape[0], REC))
+        for i, u in enumerate(X):
+            #find recipes each user has "rated"
+            idx = u.nonzero()
+            ratings = np.array(u[idx]).flatten()
+            recipes = idx[1][ratings>=self.rating]
+            #find their closest neighbors, making sure not to include self
+            closest = self.estimator.kneighbors(self.R[recipes])[1][:,1:].flatten()
+            
+            #find which ones were most frequent
+            recipe_count = dict()
+            for recipe in closest:
+                recipe_count[recipe] = recipe_count.get(recipe, 0) + 1
+            lst = [(count, recipe) for recipe, count in recipe_count.items()]
+            lst = heapq.nlargest(REC, lst)
+            recommendations[i] = [k[1] for k in lst]
+
+        return recommendations
+
+    def score(self, X, y):
+        score = super().score(X, y)
+        with open(self.log+".log", 'a+') as f:
+            f.write(f"{datetime.now()}. recipeKNN finished. metric={self.metric}, score={score}.\n") 
+        return score
