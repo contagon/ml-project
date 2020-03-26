@@ -175,11 +175,12 @@ class userCluster(Recommender):
                 j += 1
             if j >= X.shape[0]:
                 break
-        idx = np.array(idx, dtype='int')
-        labels = self.labels[idx]
+        idxs = np.array(idx, dtype='int')
+        labels = self.labels[idxs]
 
         #get recommendations based on those users (all users in the same cluster)
-        return np.array([self.recommend( np.argwhere(self.labels==label).flatten() ) for i, label in enumerate(labels)])
+        #make sure we don't include ourselves by using np.setdiff1d
+        return np.array([self.recommend( np.setdiff1d( np.argwhere(self.labels==label).flatten(),  idx) ) for i, (idx, label) in enumerate(zip(idxs, labels))])
 
     def score(self, X, y):
         score = super().score(X, y)
@@ -227,23 +228,24 @@ class userClusterKNN(Recommender):
                 j += 1
             if j >= X.shape[0]:
                 break
-        idx = np.array(idx, dtype=np.int8)
-        labels = self.labels[idx]
+        idxs = np.array(idx, dtype=np.int8)
+        labels = self.labels[idxs]
 
         rec_recipes = np.zeros((X.shape[0], REC), dtype='int')
         #iterate through each user's cluster
-        for i, (label, x) in enumerate(zip(labels, X)):
+        for i, (idx, label, x) in enumerate(zip(idx, labels, X)):
             #find all recipes in cluster
             cluster = np.argwhere(self.labels==label).flatten()
 
             #find k nearest neighbors in the cluster (unless there isn't enough of them)
+            #in both cases make sure we don't include ourselves
             if len(cluster) > self.n_neighbors+1:
-                idx = self.knn.fit(self.X[cluster]).kneighbors(x.reshape(1,-1))[1][0,1:]
+                rec = self.knn.fit(self.X[cluster]).kneighbors(x.reshape(1,-1))[1][0,1:]
             else:
-                idx = cluster
+                rec = np.setdiff1d(cluster, idx)
                 
             #get recommended recipes
-            rec_recipes[i]   = self.recommend(idx)
+            rec_recipes[i]   = self.recommend(rec)
 
         return rec_recipes
 
