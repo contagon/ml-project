@@ -43,7 +43,7 @@ def main(rdr, data, rating, sc, n_jobs, profile):
     with open(profile+".log", 'a+') as f:
             f.write(f"{data}, {rating}, {sc} \n")
     #prepare testing data and splitting data
-    user_test = Utest[:,-1].toarray().flatten().astype('int')
+    user_test = Utest[:,-1].toarray().flatten().astype('int')[:5]
     y = np.zeros((user_test.shape[0], 2), dtype='int')-1
     for i in range(len(y)):
         recipes = Utest[i].nonzero()[1][:-1]
@@ -122,13 +122,13 @@ def main(rdr, data, rating, sc, n_jobs, profile):
                 best_score_ = gs.best_score_
                 best_params_ = gs.best_params_
                 best_dr_params = dr_param
-                results = gs.cv_results_
+                results = pd.DataFrame(gs.cv_results_)
         #open all data files
         scores = pd.read_pickle(filename)
 
         #save all data
         temp = results[results["params"]==best_params_]
-        column = "MkNN_" + rating
+        column = "MkNN_" + str(rating)
         scores[column][dr] = (best_score_, temp["mean_fit_time"].iloc[0], 
                         temp["mean_score_time"].iloc[0], {**best_params_, **best_dr_params})
         scores.to_pickle(filename)
