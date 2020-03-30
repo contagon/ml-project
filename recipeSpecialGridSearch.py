@@ -43,7 +43,7 @@ def main(rdr, data, rating, sc, n_jobs, profile):
     with open(profile+".log", 'a+') as f:
             f.write(f"{data}, {rating}, {sc} \n")
     #prepare testing data and splitting data
-    user_test = Utest[:,-1].toarray().flatten().astype('int')[:5]
+    user_test = Utest[:,-1].toarray().flatten().astype('int')
     y = np.zeros((user_test.shape[0], 2), dtype='int')-1
     for i in range(len(y)):
         recipes = Utest[i].nonzero()[1][:-1]
@@ -89,6 +89,8 @@ def main(rdr, data, rating, sc, n_jobs, profile):
 
     dr_options = [TruncatedSVD(), NMF(solver='mu'), LatentDirichletAllocation(learning_method='online'), KernelPCA(eigen_solver="arpack")]
     dr_names = ["PCA", "NMF", "LDA", "KPCA"]
+    dr_options = [NMF(solver='mu'), LatentDirichletAllocation(learning_method='online'), KernelPCA(eigen_solver="arpack")]
+    dr_names = ["NMF", "LDA", "KPCA"]
 
     #iterate through all dimension reducers as we go!
     for dr, dr_class in zip(dr_names, dr_options):
