@@ -89,8 +89,8 @@ def main(rdr, data, rating, sc, n_jobs, profile):
 
     dr_options = [TruncatedSVD(), NMF(solver='mu'), LatentDirichletAllocation(learning_method='online'), KernelPCA(eigen_solver="arpack")]
     dr_names = ["PCA", "NMF", "LDA", "KPCA"]
-    dr_options = [NMF(solver='mu'), LatentDirichletAllocation(learning_method='online'), KernelPCA(eigen_solver="arpack")]
-    dr_names = ["NMF", "LDA", "KPCA"]
+    dr_options = [KernelPCA(eigen_solver="arpack")]
+    dr_names = ["KPCA"]
 
     #iterate through all dimension reducers as we go!
     for dr, dr_class in zip(dr_names, dr_options):
