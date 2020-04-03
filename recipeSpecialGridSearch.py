@@ -12,6 +12,7 @@ from joblib import Parallel, parallel_backend, register_parallel_backend
 
 from ipyparallel import Client
 from ipyparallel.joblib import IPythonParallelBackend
+from time import time
 
 #misc imports
 import pandas as pd
@@ -81,23 +82,21 @@ def main(rdr, data, rating, sc, n_jobs, profile):
 
     if rdr == "MkNN":
         rdr_class = recipeMultipleKNN(log=profile, sc=sc, rating=rating)
-        rdr_params = {"metric": ['minkowski', 'cosine'],
-                    "n_neighbors": [2, 10, 50, 100]}
+        rdr_params = {"metric": ['minkowski', 'cosine'],}
+                    #"n_neighbors": [2, 10, 50, 100]}
 
     ###### Actual Grid search is right here, we'll essentially do everything one at a time #############
     U_tog = sparse.vstack([U[user_test], U])
 
     dr_options = [TruncatedSVD(), NMF(solver='mu'), LatentDirichletAllocation(learning_method='online'), KernelPCA(eigen_solver="arpack")]
     dr_names = ["PCA", "NMF", "LDA", "KPCA"]
-    dr_options = [KernelPCA(eigen_solver="arpack")]
-    dr_names = ["KPCA"]
 
     #iterate through all dimension reducers as we go!
     for dr, dr_class in zip(dr_names, dr_options):
         with open(profile+".log", 'a+') as f:
             f.write(f"######### {dr} ############# \n")
 
-        dr_params = {"n_components": [20, 40, 60, 80, 100],
+        dr_params = {"n_components": [20]#, 40, 60, 80, 100],
                     }
         if dr == "KPCA":
             dr_params = {"kernel": ["linear", "poly", "rbf"], 
@@ -108,8 +107,10 @@ def main(rdr, data, rating, sc, n_jobs, profile):
         #iterate by hand through parameter grid
         for dr_param in ParameterGrid(dr_params):
             #transform recipe data
+            start = time()
             dr_class.set_params(**dr_param)
             data_red = dr_class.fit_transform(data)
+            fit_time = time() - start
 
             #saved it to our class
             rdr_class.R = data_red
@@ -124,6 +125,7 @@ def main(rdr, data, rating, sc, n_jobs, profile):
                 best_score_ = gs.best_score_
                 best_params_ = gs.best_params_
                 best_dr_params = dr_param
+                best_fit_time = fit_time
                 results = pd.DataFrame(gs.cv_results_)
         #open all data files
         scores = pd.read_pickle(filename)
@@ -131,7 +133,7 @@ def main(rdr, data, rating, sc, n_jobs, profile):
         #save all data
         temp = results[results["params"]==best_params_]
         column = "MkNN_" + str(rating)
-        scores[column][dr] = (best_score_, temp["mean_fit_time"].iloc[0], 
+        scores[column][dr] = (best_score_, temp["mean_fit_time"].iloc[0]+best_fit_time, 
                         temp["mean_score_time"].iloc[0], {**best_params_, **best_dr_params})
         scores.to_pickle(filename)
 
