@@ -10,6 +10,7 @@
 \usepackage{natbib}
 \usepackage{amsmath}
 \usepackage{xcolor}
+\usepackage[margin=1.5in]{geometry}
 
 \newcommand\todo[1]{\textcolor{red}{TODO: #1 \\}}
 % \renewcommand\todo[1]{}
@@ -31,74 +32,94 @@ Machine Learning algorithms that make recommendations to users are becoming more
 
 \todo{More research on what's been already done.}
 
+
 \section{Data}
-Our data was gathered from \cite{data}, whose dataset can be found at \href{https://www.kaggle.com/shuyangli94/food-com-recipes-and-user-interactions}{here}. The data consists of more than 180 thousand recipes (made up of their ingredients, calorie level, and various tags describing them), and 700 thousand user reviews all scraped from Food.com ranging from 0 to 5 stars. The original authors of the data used various natural language processing techniques to parse the recipes into about eight thousand unique ingredients, around 500 unique tags, and a calorie level that is a 0, 1, or 2 denoting low-calorie to high-calorie recipes.
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\textwidth]{figs/data.pdf}
+\caption{Data Overview}
+\label{fig:data_overview}
+\end{figure}
+
+Our data was gathered from \cite{data}, whose dataset can be found at \href{https://www.kaggle.com/shuyangli94/food-com-recipes-and-user-interactions}{here}. The data consists of more than 180 thousand recipes (made up of their ingredients, calorie level, and various tags describing them), and 700 thousand user reviews of the 180 thousand recipes all scraped from Food.com  and ranging from 0 to 5 stars. The original authors of the data used various natural language processing techniques to parse the recipes into about 8 thousand unique ingredients, around 500 unique tags, and a calorie level that is a 0, 1, or 2 denoting low-calorie to high-calorie recipes. To visualize what we're saying here see Figure \ref{fig:data_overview}.
 
 The data appears to be very reliable, having been scraped directly from Food.com with the scraper being publicly available on github \cite{data_scraper}. Furthermore, it was used in a published research article, so one would hope everything was done ethically and correctly. The dataset is plenty large enough to give use meaningful answers to our questions and should be able to make a fairly robust recommendation system.
+
 
 \section{Ethical Ramifications}
 As with all recommendation systems, we must be careful what sort of bias we program into our algorithms. It would be very easily to heavily weight the algorithms to favor low-calorie recipes (healthier options) in an effort to push the public towards eating more healthy. While this would likely be well intentioned, in a way it is removing one's freedom of options, and is manipulating user's behaviors. Many similar biases must also be carefully considered, whether it be toward a certain ingredient/brand (company sponsorship), a certain ethnic preference (potentially racist), etc.
 
 \section{Methods}
 
-We first put the data in a format useful for our algorithms. For our recipes, we make each recipe a vector, with a 1 in the $i$th entry denoting it having the $i$th ingredient or tag, and a 0 that it doesn't have it. We make the last entry that of calorie level. We format our user data in a similar way, only with the actual rating (from 0-5) of the $i$th recipe being in the $i$th entry.
+\subsection{Data Preparation}
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\textwidth]{figs/dist.pdf}
+\caption{Data Overview}
+\label{fig:dist}
+\end{figure}
 
-This is a far from perfect solution. Note that the importance of a recipe having salt will be just as important as a recipe having jasmine or a jalapeno pepper. Commonly used in document classification, we use "TF-IDF" to help with this problem. In our case, we change each entry using the conversion (where item means either ingredient/tag):
+Note our data is on the format as seen in \ref{fig:data_overview}. This is a far from perfect solution. Note that the importance of a recipe having salt will be just as important as a recipe having jasmine or a jalapeno pepper. Commonly used in document classification, we use "TF-IDF" to help with this problem. In our case, we change each entry using the conversion (where item means either ingredient/tag):
 
 $$\textfrac{\# of $i$th item}{Total \# of items in Recipe} * \log \Big( \textfrac{Total \# of Recipes}{\# of Recipes with $i$th item} \Big)$$
 
-We perform the same transformation on the user dataset, replacing item with rating, and recipes with users. Throughout this document we analyze our data in both forms in order to visualize which data helps the algorithms perform the best. (Spoiler: It's usually TF-IDF)
+We perform the same transformation on the user dataset, replacing item with rating, and recipes with users. Throughout this document we analyze our data in both forms in order to visualize which data helps the algorithms perform the best.
 
-\subsection{Recommendation based on Recipe}
-We first begin by reducing the dimensions of our data using PCA. After transforming the basis, we want to keep the components that explain the majority of the variance in the data. These variances can be seen in Figure \ref{fig:pca}. We noted that for both, 100 components should be more than enough, with 20-40 likely being close to enough.
-\begin{figure}[t]
-\centering
-\includegraphics[width=1\textwidth]{figs/pca.pdf}
-\caption{PCA Analysis of both Original and TF-IDF Recipe data}
-\label{fig:pca}
-\end{figure}
+To give ourselves a little intuition, we also visualize the distributions of how many items a recipe has and how many recipes a user has rated. This can be seen in Figure \ref{fig:dist}.
 
-We next ran a Nearest Neighbor search to find the recipe that is the most similar, using KFold cross validation with K=7. We tried it with both the 2-norm and the cosine metric that will compute the "angle" between entries and timed each iteration of neighbor finding (what would need to be done on the fly) to see which combination is the most effective. We rated the results by the number of tags and ingredients that the resulting recipe shared with the input recipe. The results are in Figures \ref{fig:recipe_nn_scores} and \ref{fig:recipe_nn_times}.
+
+\subsection{Recommendation Process}
+Most recommendation systems or "filtering" systems are considered either content-based or collaborative-based filtering. Content based systems make recommendations on attributes of the items; in our case this would be ingredients and tags of our recipes. Collaborative-based filtering uses the history of other users who are similar to us to recommend items. We'll explore using both. Our workflows will be as shown in Figure \ref{fig:flow}.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=1\textwidth]{figs/recipeNN_scores.pdf}
-\caption{Results of Nearest Neighbor (scores)}
-\label{fig:recipe_nn_scores}
+\includegraphics[width=1\textwidth]{figs/flow.pdf}
+\caption{Recommendation Systems Flow}
+\label{fig:flow}
 \end{figure}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=1\textwidth]{figs/recipeNN_times.pdf}
-\caption{Results of Nearest Neighbor (times)}
-\label{fig:recipe_nn_times}
-\end{figure}
+\subsubsection{Collaborative-Based Filtering}
+We'll go over what was attempted in each step of collaborative-based filtering
+\begin{enumerate}
+    \item \textbf{Dimension Reducer}. PCA, LDA, NMF and Kernelized PCA were all used. Probablistic PCA and Sparse PCA were also attempted, but don't play well with sparse input. Kernelized PCA was also too computationally expensive and often abandoned.
+    \item \textbf{User Finder}. We tried various algorithms for this:
+    \begin{itemize}
+        \item k Nearest Neighbor (kNN).
+        \item Various Clustering Algorithms. Return all other users found in same cluster. Attempted using KMeans, GMM, MinCut, and DBSCAN.
+        \item Combination of clustering and kNN. Return k nearest neighbors found in cluster. Could be more computationally effective.
+    \end{itemize}
+    We also take care to make sure our user finder doesn't return the input user.
+    \item \textbf{Recipe Selector}. Taking the users passed to it, count number of times recipes are rated by user set along with their rating. Choose from among recipes by:
+    \begin{itemize}
+        \item Sorting by sum of ratings and return largest N sums
+        \item Sorting by frequency and then by average rating. Return N largest.
+        \item Sorting by average rating and then frequency.Return N largest.
+    \end{itemize}
+\end{enumerate}
 
-Notice that the cosine metric was consistently faster (likely due to their being less operations to compute), while as far as accuracy, the metrics were a wash, as was the difference between TF-IDF and the original data.
+\subsubsection{Content-Based Filtering}
+We'll go over what was attempted in each step of content-based filtering
+\begin{enumerate}
+    \item \textbf{User to Recipe Converter}. We attempt this in two ways:
+    \begin{itemize}
+        \item Take all recipes with rating from user above a threshold. This method keeps each recipe separate (SR).
+        \item Take all ingredients from recipes with rating from user above a threshold and combine into one huge recipe. (TR) 
+    \end{itemize}
+    \item \textbf{Dimension Reducer}. Dimensions were reduced in the same way as in the Collaborative-Based Approach.
+    \item \textbf{Similar Recipe Selector}. In the case where the set of user describing recipes is a singleton, simply take the N NNs. In the case it isn't, take k NNs of each recipe and return the N most frequent.
+\end{enumerate}
 
-Next, to see if we can reduce this time, we see if we can cluster the data, so we can find the cluster our test recipe belongs in, and then find the nearest neighbor in that set. We run UMAP first to identify clusters, although it won't be usable in production due to being unable to aggregate data to it (can't find what cluster our data point is in). As before, we alter parameters to find the best fit. The results are found in Figure \ref{fig:recipe_umap}.
+\subsubsection{Scoring}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=1\textwidth]{figs/recipeUMAP_tfidf.pdf}
-\caption{Results of UMAP on TF-IDF Recipe data}
-\label{fig:recipe_umap}
-\end{figure}
+To evaluate our models, we removed around 100 thousand reviews from random users. We will then take in the user as input and try to predict the removed recipe that we know they rated or something similar to it.
 
-Note that UMAP with the euclidean norm identify three clusters very clearly!
+To quantitatively define how good a prediction is, we use two different loss functions.  Let $R$ be the recommended recipe, $G$ the goal recipe and $I_R$, $I_G$ be the set of items that each has. We define our loss functions as:
+\begin{align}
+    Int(R,G) = |I_R \cap I_G| && Com(R,G) = -|(I_R \cap I_G)^C|
+\end{align}
+We desire to maximize both. $Int(R,G)$ rewards us for correctly recommending items; $Com(R,G)$ punishes us for recommending incorrect items. Sometimes we may recommend something with cheddar cheese instead of American cheese and $Com(R,G)$ punishes that, even though it's likely close enough. Similarly, $Int(R,G)$ rewards recipes that have many ingredients. Using both gives us more insight on how our algorithms perform.
 
-\todo{Find defining features of UMAP clusters}
-\todo{Try clustering algorithm that lets you test cluster of new data, see if using it with NN hinders results}
-\subsection{Recommendation based on User}
-Using the above results, we'll further cluster our user data to identify recipes that a user may enjoy.
-
-We attempted using UMAP to identify clusters, but it performed very poorly.
-
-\todo{Cluster User Data using Min-Cut, HMM, New Algorithm?}
-\todo{NN User Data (try varying number of nearest neighbors)}
-\todo{After clustering/NN, experiment with most common, closest, etc rated recipes in user group}
-\todo{Weighted NN using ratings of single user? (Could be used as new algorithm)}
-
+To get our total loss, we simply take the mean of all N (we have arbitrarily chosen N=5 for our tests) recommendations and then of all the data points together.
 \section{Results}
 
 \section{Analysis}
