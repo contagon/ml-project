@@ -1,8 +1,8 @@
 #!/bin/env bash
 
 #SBATCH --array=0-3
-#SBATCH --mem-per-cpu=32GB
-#SBATCH --time=2-01:0:0
+#SBATCH --mem-per-cpu=16GB
+#SBATCH --time=3-00:0:0
 #SBATCH --cpus-per-task=8
 #SBATCH -J "recipe"$1   # job name
 #SBATCH --nodes=1   # limit to one node
