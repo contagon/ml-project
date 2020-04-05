@@ -120,7 +120,13 @@ To quantitatively define how good a prediction is, we use two different loss fun
 We desire to maximize both. $Int(R,G)$ rewards us for correctly recommending items; $Com(R,G)$ punishes us for recommending incorrect items. Sometimes we may recommend something with cheddar cheese instead of American cheese and $Com(R,G)$ punishes that, even though it's likely close enough. Similarly, $Int(R,G)$ rewards recipes that have many ingredients. Using both gives us more insight on how our algorithms perform.
 
 To get our total loss, we simply take the mean of all N (we have arbitrarily chosen N=5 for our tests) recommendations and then of all the data points together.
+
+
 \section{Results}
+
+We ran a grid search over each combination of dimension reducer and similarity finder to find the best hyperparameters for each combination of the two. We also timed both the fitting as well as the prediction and scoring time to be able to see which methods are actually feasible in practice. We did this seperately for both the intersection and the complement metric to see how each could be maximized. The results can be seen in Figures \ref{fig:user_rdr}, \ref{fig:user_dr}, \ref{fig:recipe_rdr}, and \ref{fig:recipe_dr}.
+
+As a baseline, we tested the performance of randomly predicting N recipes and recommending the N most popular recipes. Random recipes got \todo{PUT IN BASELINES HERE}.
 \begin{figure}[t]
 \centering
 \includegraphics[width=1\textwidth]{figs/user_rdr.pdf}
