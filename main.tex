@@ -55,7 +55,7 @@ As with all recommendation systems, we must be careful what sort of bias we prog
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.9\textwidth]{figs/dist.pdf}
-\caption{Data Overview}
+\caption{Data Statistics}
 \label{fig:dist}
 \end{figure}
 
@@ -79,6 +79,9 @@ Most recommendation systems or "filtering" systems are considered either content
 \end{figure}
 
 \subsubsection{Collaborative-Based Filtering}
+
+It her that we'll use our new algorithm, DBSCAN, which stands for density-based spatial clustering of applications with noise. It clusters by defining core samples, which is data points that have a minimum number of samples with a certain epsilon. It then recursively tests the samples within that epsilon to see if they're core samples as well, and continues iterating until finished. This allows DBSCAN to detect non-convex clusters unlike KMeans and GMM, but still be relatively faster that MinCut and t-SNE.
+
 We'll go over what was attempted in each step of collaborative-based filtering
 \begin{enumerate}
     \item \textbf{Dimension Reducer}. PCA, LDA, NMF and Kernelized PCA were all used. Probablistic PCA and Sparse PCA were also attempted, but don't play well with sparse input. Kernelized PCA was also too computationally expensive and often abandoned.
@@ -96,6 +99,8 @@ We'll go over what was attempted in each step of collaborative-based filtering
         \item Sorting by average rating and then frequency.Return N largest.
     \end{itemize}
 \end{enumerate}
+
+Note if our algorithm returns too few recommendations, (ie a cluster ends up being a singleton or something of the sort), we simply fill in the rest with random recipes. 
 
 \subsubsection{Content-Based Filtering}
 We'll go over what was attempted in each step of content-based filtering
@@ -124,42 +129,62 @@ To get our total loss, we simply take the mean of all N (we have arbitrarily cho
 
 \section{Results}
 
-We ran a grid search over each combination of dimension reducer and similarity finder to find the best hyperparameters for each combination of the two. We also timed both the fitting as well as the prediction and scoring time to be able to see which methods are actually feasible in practice. We did this seperately for both the intersection and the complement metric to see how each could be maximized. The results can be seen in Figures \ref{fig:user_rdr}, \ref{fig:user_dr}, \ref{fig:recipe_rdr}, and \ref{fig:recipe_dr}.
-
-As a baseline, we tested the performance of randomly predicting N recipes and recommending the N most popular recipes. Random recipes got \todo{PUT IN BASELINES HERE}.
 \begin{figure}[t]
 \centering
 \includegraphics[width=1\textwidth]{figs/user_rdr.pdf}
-\caption{Comparison of Collaboration-Based Recommendation Algorithms}
-\label{fig:user_rdr}
-\end{figure}
-
-\begin{figure}[t]
-\centering
 \includegraphics[width=1\textwidth]{figs/user_dr.pdf}
-\caption{Comparison of Collaboration-Based Dimension Reduction Algorithms}
-\label{fig:user_dr}
+\caption{Comparison of Collaboration-Based Recommendation Algorithms}
+\label{fig:user_results}
 \end{figure}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=1\textwidth]{figs/recipe_rdr.pdf}
+\includegraphics[width=1\textwidth]{figs/recipe_dr.pdf}
 \caption{Comparison of Content-Based Recommendation Algorithms}
-\label{fig:recipe_rdr}
+\label{fig:recipe_results}
 \end{figure}
+We ran a grid search over each combination of dimension reducer and similarity finder to find the best hyperparameters for each combination of the two. We also timed both the fitting as well as the prediction time to be able to see which methods are actually feasible in practice. We did this separately for both the intersection and the complement metric to see how each could be maximized. The results can be seen in Figures \ref{fig:user_results} and \ref{fig:recipe_results}.
 
+After a few test were done, we found that the best recipe selector was the sorting by sum of ratings one, almost uniformly. To help narrow down our search, we used it exclusively. 
+
+Certain combinations had to be abandoned as well due to high processing requirements that just didn't make them feasible in practice. This includes kernelized PCA with content-based filtering, as well as using MinCut along with NN. 
+
+As a baseline, we tested the performance of randomly predicting N recipes and recommending the N most popular recipes. Random recipes got 7.66 and -39.12 and popular recipes got 9.58 and -42.515, in the intersection and complement metrics respectively.
+
+
+We also include the best results in each category in Figure \ref{fig:best}.
 \begin{figure}[t]
 \centering
-\includegraphics[width=1\textwidth]{figs/recipe_dr.pdf}
-\caption{Comparison of Content-Based Dimension Reduction Algorithms}
-\label{fig:recipe_dr}
+\includegraphics[width=1\textwidth]{figs/best.pdf}
+\caption{Best Results}
+\label{fig:best}
 \end{figure}
 
 
 \section{Analysis}
 
+\subsection{Collaborative-Based Approach}
+
+First note that nearly none of these algorithms were particularly good in the complement metric. This means that on average, no particular algorithm was extremely adept at the complement metric under all circumstances, but this doesn't mean that it a certain combination won't perform extremely well.
+
+Also, the clustering algorithms all did almost uniformly well, with very little separating them. This surprises me since I expected the clusters to be relatively non-convex, but based on these results, I would actually assume that most of the resulting clusters are convex. They performed a little better than recommending popular recipes, and I expect would bring better variety to users as well, making them particularly worth having around. It also appears the shortcomings of kNN also fell upon the combo cluster and kNN algorithms as they performed better than random, but still worse than just recommending popular algorithms. I would also guess that NNBall essentially acted as a "local" cluster by just selecting everything within a radius of itself, thereby circumventing the shortcomings of kNN (which may reach very far away to select a neighbor).
+
+Also, the choice of data, original or TF-IDF, made very minimal difference in the results, which is extremely surprising. This could be due to most users having rated so few recipes out of the total amount of recipes, that it ends up looking like they're close/not close regardless of the data. 
+
+Also note that the choice of dimension reducer had little to no effect on average either. Again, this doesn't mean a certain combination of dimension reducer and similar user selector might be dynamite, but as a whole, it didn't matter too much.
+
+\subsection{Content-Based Approach}
+
+Right off the bat, it can be seen that the mashing all previously liked ingredients of a user into a recipe and finding similar ones (TR) likely just sought out recipes that have many many ingredients, which means it should probably be avoided. On the other hand, separating out the recipes had the opposite effect, performing extremely well in the complement metric and poorly in the intersection metric.
+
+Once again, the choice of dimension reducers appears to mostly be a wash.
+
+Finally, the choice of data in this scenario did play a huge role in the results. Notice that the use of TF-IDF really improved performance in the complement metric, possibly playing a pretty active role in transforming the vector space.  
+
 \section{Conclusion}
 
+Recommendations systems are common all over the web from Netflix to eBay. One space where the usefulness of these hasn't been researched extensively is the food recipe industry. In our analysis, we found no clear cut perfect algorithm in all scenarios winner. Depending on what you what your users to experience - either extremely similar recipes, or a little more freedom with some overlap in previous history - the choice of machine learning algorithm is going to play a large role. 
 \bibliographystyle{plain}
 \bibliography{references}
 \end{document}
