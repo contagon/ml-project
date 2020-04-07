@@ -46,7 +46,7 @@ SVD decomposition. There has also been work done to use a hybrid approach that u
 \label{fig:data_overview}
 \end{figure}
 
-Our data was gathered from \cite{data}, whose dataset can be found \href{https://www.kaggle.com/shuyangli94/food-com-recipes-and-user-interactions}{here}. The data consists of more than 180 thousand recipes (made up of their ingredients, calorie level, and various tags describing them), and 700 thousand user reviews of the 180 thousand recipes all scraped from Food.com  and ranging from 1 to 5 stars. The original authors of the data used various natural language processing techniques to parse the recipes into about 8 thousand unique ingredients, around 500 unique tags, and a calorie level that is a 0, 1, or 2 denoting low-calorie to high-calorie recipes. To visualize what we're saying, see Figure \ref{fig:data_overview}. We denote the recipe dataset as $R$ and the user dataset as $U$ throughout the rest of the paper.
+Our data was gathered from \cite{data}, whose dataset can be found \href{https://www.kaggle.com/shuyangli94/food-com-recipes-and-user-interactions}{here}. The data consists of more than 180 thousand recipes (made up of their ingredients, calorie level, and various tags describing them), and 700 thousand user reviews of the 180 thousand recipes all scraped from Food.com  and ranging from 1 to 5 stars. The original authors of the data used various natural language processing techniques to parse the recipes into about 8 thousand unique ingredients, around 500 unique tags (both characterized with a 1 when they are present, 0 when they aren't), and a calorie level that is a 0, 1, or 2 denoting low-calorie to high-calorie recipes. To visualize what we're saying, see Figure \ref{fig:data_overview}. We denote the recipe dataset as $R$ and the user dataset as $U$ throughout the rest of the paper.
 
 The data appears to be very reliable, having been scraped directly from Food.com with the scraper being publicly available on github \cite{data_scraper}. Furthermore, it was used in a published research article, so one would hope everything was done ethically and correctly. The dataset is plenty large enough to give use meaningful answers to our questions and should be able to make a fairly robust recommendation system.
 
@@ -74,7 +74,9 @@ To give ourselves a little intuition, we also visualize the distributions of how
 
 
 \subsection{Recommendation Process}
-Most recommendation systems or "filtering" systems are considered either content-based or collaborative-based filtering. Content-based systems make recommendations on attributes of the items; in our case, this would be ingredients and tags of our recipes. Collaborative-based filtering uses the history of other users who are similar to us to recommend items. We'll explore using both. Our workflows will be as shown in Figure \ref{fig:flow}.
+Most recommendation systems or "filtering" systems are considered either content-based or collaborative-based filtering. Content-based systems make recommendations on attributes of the items; in our case, this would be ingredients and tags of our recipes. Collaborative-based filtering uses the history of other users who are similar to us to recommend items. We'll explore using both. Our workflows will be shown in Figure \ref{fig:flow}.
+
+\subsubsection{Collaborative-Based Filtering}
 
 \begin{figure}[t]
 \centering
@@ -83,11 +85,9 @@ Most recommendation systems or "filtering" systems are considered either content
 \label{fig:flow}
 \end{figure}
 
-\subsubsection{Collaborative-Based Filtering}
+It's here that we'll use our new algorithm, DBSCAN, which stands for density-based spatial clustering of applications with noise. It clusters by defining core samples, which are data points that have a minimum number of samples within a certain epsilon. It then recursively tests the samples within that epsilon to see if they're core samples as well, and continues iterating until finished. This allows DBSCAN to detect non-convex clusters, unlike KMeans and GMM, but still be relatively faster that MinCut and t-SNE.
 
-It's here that we'll use our new algorithm, DBSCAN, which stands for density-based spatial clustering of applications with noise. It clusters by defining core samples, which are data points that have a minimum number of samples within a certain epsilon. It then recursively tests the samples within that epsilon to see if they're core samples as well, and continues iterating until finished. This allows DBSCAN to detect non-convex clusters unlike KMeans and GMM, but still be relatively faster that MinCut and t-SNE.
-
-We'll go over what was attempted in each step of collaborative-based filtering
+We'll go over what was attempted in each step of collaborative-based filtering.
 \begin{enumerate}
     \item \textbf{Dimension Reducer}. PCA, LDA, NMF and Kernelized PCA were all used. Probablistic PCA and Sparse PCA were also attempted, but don't play well with sparse input. Kernelized PCA was also too computationally expensive and often abandoned.
     \item \textbf{User Finder}. We tried various algorithms for this:
@@ -99,7 +99,7 @@ We'll go over what was attempted in each step of collaborative-based filtering
     We also take care to make sure our user finder doesn't return the input user.
     \item \textbf{Recipe Selector}. Taking the users passed to it, count number of times recipes are rated by user set along with their rating. Choose from among recipes by:
     \begin{itemize}
-        \item Sorting by sum of ratings and return largest N sums
+        \item Sorting by sum of ratings and return largest N sums.
         \item Sorting by frequency and then by average rating. Return N largest.
         \item Sorting by average rating and then frequency. Return N largest.
     \end{itemize}
@@ -108,7 +108,7 @@ We'll go over what was attempted in each step of collaborative-based filtering
 Note if our algorithm returns too few recommendations, (ie a cluster ends up being a singleton or something of the sort), we simply fill in the rest with random recipes. 
 
 \subsubsection{Content-Based Filtering}
-We'll go over what was attempted in each step of content-based filtering
+We'll go over what was attempted in each step of content-based filtering.
 \begin{enumerate}
     \item \textbf{User to Recipe Converter}. We attempt this in two ways:
     \begin{itemize}
@@ -127,7 +127,7 @@ To quantitatively define how good a prediction is, we use two different loss fun
 \begin{align}
     Int(R,G) = |I_R \cap I_G| && Com(R,G) = -|(I_R \cap I_G)^C|
 \end{align}
-We desire to maximize both. $Int(R,G)$ rewards us for correctly recommending items; $Com(R,G)$ punishes us for recommending incorrect items. Sometimes we may recommend something with cheddar cheese instead of American cheese and $Com(R,G)$ punishes that, even though it's likely close enough. Similarly, $Int(R,G)$ rewards recipes that have many ingredients. Using both gives us more insight on how our algorithms perform.
+We desire to maximize both. $Int(R,G)$ rewards us for correctly recommending items; $Com(R,G)$ punishes us for recommending incorrect items. For example, sometimes we may recommend something with cheddar cheese instead of American cheese and $Com(R,G)$ punishes that, even though it's likely close enough. Similarly, $Int(R,G)$ rewards recipes that have many ingredients. Using both gives us more insight on how our algorithms perform.
 
 To get our total loss, we simply take the mean of all N (we have arbitrarily chosen N=5 for our tests) recommendations and then the mean of all the data points together.
 
@@ -136,7 +136,7 @@ To get our total loss, we simply take the mean of all N (we have arbitrarily cho
 
 We ran a grid search over each combination of dimension reducer and similarity finder to find the best hyperparameters for each combination of the two. We also timed both the fitting as well as the prediction steps to be able to see which methods are actually feasible in practice. We did this separately for both the intersection and the complement metric to see how each could be maximized. The results can be seen in Figures \ref{fig:user_results}, \ref{fig:recipe_results} and \ref{fig:best}.
 
-After a few test were done, we found that the best recipe selector for collarborative-based filtering was sorting by sum of ratings, almost uniformly. To help narrow down our search, we used it exclusively. 
+After a few test were done, we found that the best recipe selector for collaborative-based filtering was sorting by sum of ratings, almost uniformly. To help narrow down our search, we used it exclusively. 
 
 Certain combinations had to be abandoned as well due to high processing requirements that just didn't make them feasible in practice. This includes kernelized PCA with content-based filtering, as well as using MinCut along with NN. 
 
@@ -161,9 +161,9 @@ First note that nearly none of these algorithms were particularly good in the co
 
 Also, the clustering algorithms all did almost uniformly well, with very little separating them. This surprises me since I expected the clusters to be relatively non-convex, but based on these results, I would actually assume that most of the resulting clusters are convex. They performed a little better than recommending popular recipes, and I expect would bring better variety to users as well, making them particularly worth having around. It also appears the shortcomings of kNN also fell upon the combo cluster and kNN algorithms as they performed better than random, but still worse than just recommending popular algorithms. I would also guess that NNBall essentially acted as a "local" cluster by just selecting everything within a radius of itself, thereby circumventing the shortcomings of kNN (which may reach very far away to select a neighbor).
 
-Also, the choice of data, original or TF-IDF, made very minimal difference in the results, which is extremely surprising. This could be due to most users having rated so few recipes out of the total amount of recipes, that it ends up looking like they're close/not close regardless of the data. 
+Also, the choice of data, original or TF-IDF, made very minimal difference in the results, which is extremely surprising. This could be due to most users having rated so few recipes out of the total amount of recipes that it ends up looking like they're close/not close regardless of the data. 
 
-Also note that the choice of dimension reducer had little to no effect on average either. Again, this doesn't mean a certain combination of dimension reducer and similar user selector might be dynamite, but as a whole, it didn't matter too much.
+Note that the choice of dimension reducer had little to no effect on average either. Again, this doesn't mean a certain combination of dimension reducer and similar user selector might be dynamite, but as a whole, it didn't matter too much.
 
 \subsection{Content-Based Approach}
 
@@ -175,7 +175,7 @@ Also note that the choice of dimension reducer had little to no effect on averag
 \label{fig:recipe_results}
 \end{figure}
 
-Right off the bat, it can be seen that the mashing all previously liked ingredients of a user into a recipe and finding similar ones (TR) likely just sought out recipes that have many many ingredients, which means it should probably be avoided. On the other hand, separating out the recipes had the opposite effect, performing extremely well in the complement metric and poorly in the intersection metric.
+Right off the bat, it can be seen that mashing all previously liked ingredients of a user into a recipe and finding similar ones (TR) likely just sought out recipes that have many, many ingredients, which means it should probably be avoided. On the other hand, separating out the recipes had the opposite effect, performing extremely well in the complement metric and poorly in the intersection metric.
 
 Once again, the choice of dimension reducers appears to mostly be a wash.
 
@@ -190,7 +190,7 @@ Finally, the choice of data in this scenario did play a huge role in the results
 
 \section{Conclusion}
 
-Recommendations systems are common all over the web from Netflix to eBay. One space where the usefulness of these hasn't been researched extensively is the food recipe industry. In our analysis, we found no clear cut perfect algorithm in all scenarios winner. Depending on what you what your users to experience - either extremely similar recipes, or a little more freedom with some overlap in previous history - the choice of machine learning algorithm is going to play a large role. 
+Recommendations systems are common all over the web from Netflix to eBay. One space where the usefulness of these hasn't been researched extensively is the food recipe industry. In our analysis, we found no clear-cut perfect algorithm for all scenarios. Depending on what you what your users to experience - either extremely similar recipes, or a little more freedom with some overlap in previous history - the choice of machine learning algorithm is going to play a large role. 
 \bibliographystyle{plain}
 \bibliography{references}
 \end{document}
