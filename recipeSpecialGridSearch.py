@@ -82,8 +82,8 @@ def main(rdr, data, rating, sc, n_jobs, profile):
 
     if rdr == "MkNN":
         rdr_class = recipeMultipleKNN(log=profile, sc=sc, rating=rating)
-        rdr_params = {"metric": ['minkowski', 'cosine'],}
-                    #"n_neighbors": [2, 10, 50, 100]}
+        rdr_params = {"metric": ['minkowski', 'cosine'],
+                    "n_neighbors": [2, 10, 50, 100]}
 
     ###### Actual Grid search is right here, we'll essentially do everything one at a time #############
     U_tog = sparse.vstack([U[user_test], U])
@@ -96,7 +96,7 @@ def main(rdr, data, rating, sc, n_jobs, profile):
         with open(profile+".log", 'a+') as f:
             f.write(f"######### {dr} ############# \n")
 
-        dr_params = {"n_components": [20]#, 40, 60, 80, 100],
+        dr_params = {"n_components": [20, 40, 60, 80, 100],
                     }
         if dr == "KPCA":
             dr_params = {"kernel": ["linear", "poly", "rbf"], 
